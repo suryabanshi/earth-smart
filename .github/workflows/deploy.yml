@@ -1,0 +1,45 @@
+name: Deploy Earth Smart
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend to Elastic Beanstalk
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install --production
+
+      - name: Create deployment package
+        run: zip -r ../deploy-backend.zip . -x "*.git*"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: earth-smart-backend
+          environment_name: earth-smart-backend-prod
+          version_label: ${{ github.sha }}
+          region: us-east-1
+          deployment_package: deploy-backend.zip
+
+  deploy-frontend:
+    name: Deploy Frontend (Amplify auto-deploys on push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Frontend auto-deploys via AWS Amplify
+        run: echo "Amplify detects push to main and auto-deploys frontend"
