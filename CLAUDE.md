@@ -42,9 +42,18 @@ Run from the repo root:
 - `npm run test` — runs the frontend then backend jest suites
 - `npm run lint` — lints both workspaces
 
-Environment variables: copy `.env.example` to `.env.local`. Key vars:
-- Backend: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRE` (default `7d`), `BCRYPT_ROUNDS` (default `10`), `PORT` (default `5000`)
-- Frontend: `NEXT_PUBLIC_API_URL` (also defaulted in `next.config.js`)
+Environment variables: each workspace reads env files from its **own** directory — a root `.env.local` is not picked up by either app.
+- `backend/server.js` calls `dotenv.config()` with no path, so it loads `backend/.env` (cwd when run via `npm --prefix backend`).
+- Next.js loads `frontend/.env.local` (or `frontend/.env`) from its own directory.
+
+Copy the relevant sections of `.env.example` to the right place:
+```bash
+cp .env.example backend/.env      # edit: DATABASE_URL, JWT_SECRET, JWT_EXPIRE, BCRYPT_ROUNDS, PORT
+cp .env.example frontend/.env.local  # edit: NEXT_PUBLIC_API_URL
+```
+Key vars:
+- Backend (`backend/.env`): `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRE` (default `7d`), `BCRYPT_ROUNDS` (default `10`), `PORT` (default `5000`)
+- Frontend (`frontend/.env.local`): `NEXT_PUBLIC_API_URL` (also defaulted in `next.config.js`)
 
 ### Database
 
