@@ -26,6 +26,7 @@ export default function Tools() {
             <Link href="/learn" className="text-gray-600 hover:text-earth-600">Learn</Link>
             <Link href="/news" className="text-gray-600 hover:text-earth-600">News</Link>
             <Link href="/tools" className="text-earth-600 font-semibold">Tools</Link>
+            <Link href="/hook" className="text-gray-600 hover:text-earth-600">Hook</Link>
           </div>
         </div>
       </nav>

@@ -68,6 +68,7 @@ export default function Feed() {
             <Link href="/learn" className="text-gray-600 hover:text-earth-600">Learn</Link>
             <Link href="/news" className="text-gray-600 hover:text-earth-600">News</Link>
             <Link href="/tools" className="text-gray-600 hover:text-earth-600">Tools</Link>
+            <Link href="/hook" className="text-gray-600 hover:text-earth-600">Hook</Link>
             <button
               onClick={() => {
                 localStorage.removeItem('token')
