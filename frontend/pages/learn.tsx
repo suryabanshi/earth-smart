@@ -26,6 +26,7 @@ export default function Learn() {
             <Link href="/learn" className="text-earth-600 font-semibold">Learn</Link>
             <Link href="/news" className="text-gray-600 hover:text-earth-600">News</Link>
             <Link href="/tools" className="text-gray-600 hover:text-earth-600">Tools</Link>
+            <Link href="/hook" className="text-gray-600 hover:text-earth-600">Hook</Link>
           </div>
         </div>
       </nav>
