@@ -4,9 +4,9 @@ Guidance for AI assistants (and humans) working in the **Earth Smart** repositor
 
 Earth Smart is an early-stage MVP for an "all-in-one" platform (social feed, news,
 learning, tools). It is a monorepo with a Next.js frontend and an Express/PostgreSQL
-backend. The codebase is a scaffold: many endpoints return mock data and several
-documented workflows are aspirational. Read the "Reality check / gotchas" section
-before trusting the README or `docs/`.
+backend. The codebase is an early MVP scaffold. Read the "Reality check / gotchas"
+section before trusting the README or `docs/` — some documented workflows still
+diverge from what runs, though several earlier gaps have now been fixed.
 
 ## Repository layout
 
@@ -56,22 +56,34 @@ npm run dev             # Run frontend (:3000) and backend (:5000) together
 npm run dev:frontend    # Next.js dev server only
 npm run dev:backend     # nodemon server.js only
 npm run build           # Build frontend then backend
-npm run lint            # See gotcha #4 — backend has no lint script (will fail)
-npm run test            # See gotcha #3 — no tests exist yet
+npm run lint            # Frontend (next lint) then backend (eslint .) — see gotcha
+npm run test            # See gotcha #3 — no tests exist yet (jest runs, finds none)
+npm run db:migrate      # Apply database/schema.sql via backend/scripts/migrate.js
+npm run db:seed         # Load database/seed.sql via backend/scripts/seed.js
 ```
 
 Backend-local (`cd backend`): `npm start` (node), `npm run dev` (nodemon).
 Frontend-local (`cd frontend`): `npm run dev`, `npm run build`, `npm run lint`.
 
-### Database setup (the working path)
+### Database setup
+
+The database itself must exist first (PostgreSQL has no `CREATE DATABASE IF NOT
+EXISTS`), then the npm scripts apply the schema and seed data:
 
 ```bash
-createdb earth_smart
+createdb earth_smart          # one-time; or set DATABASE_URL to an existing db
+npm run db:migrate            # applies database/schema.sql (idempotent)
+npm run db:seed               # loads database/seed.sql (skips if users exist)
+```
+
+The scripts read `DATABASE_URL` from `.env` (falling back to the local default in
+`backend/config/db.js`). You can still apply the SQL files directly with `psql` if
+you prefer:
+
+```bash
 psql -U postgres -d earth_smart -f database/schema.sql
 psql -U postgres -d earth_smart -f database/seed.sql
 ```
-
-Use this, **not** `npm run db:migrate` / `npm run db:seed` (see gotcha #1).
 
 ## Architecture & conventions
 
@@ -112,34 +124,48 @@ current code does **not** keep updated.
 Treat these as the highest-value context — they are where the docs and `package.json`
 diverge from what actually runs.
 
-1. **`db:migrate` / `db:seed` scripts do not exist.** Root and backend scripts call
-   `backend/scripts/migrate.js` and `seed.js`, but there is no `backend/scripts/`
-   directory. These commands fail. Apply `database/schema.sql` / `seed.sql` with
-   `psql` instead (see above). `docs/SETUP_GUIDE.md` also references a
-   `database/migrations/` directory that does not exist.
-2. **`schema.sql` starts with `CREATE DATABASE IF NOT EXISTS earth_smart;`** which is
-   not valid PostgreSQL syntax (and can't run inside the target DB). Create the
-   database separately (`createdb earth_smart`) before running the file, or expect
-   that first line to error.
-3. **No tests exist.** Both packages declare a `jest` test script, but there are no
-   test files. `npm run test` will report no tests / fail. Add a test runner config
-   before relying on it.
-4. **`npm run lint` fails at the backend.** The root lint script runs frontend then
-   backend lint, but `backend/package.json` has no `lint` script. Only
-   `npm --prefix frontend run lint` works today.
-5. **News and courses endpoints return hardcoded mock data**, not database rows,
-   even though `news` and `courses` tables exist. `GET /api/news` and
-   `GET /api/courses` ignore Postgres entirely; `POST /api/courses/:id/enroll`
-   returns a static success without writing anything.
-6. **README tech claims are partly inaccurate.** It lists Redux Toolkit and Redis;
+### Recently fixed (don't re-report these)
+
+- **`db:migrate` / `db:seed` now work.** `backend/scripts/migrate.js` applies
+  `database/schema.sql`; `backend/scripts/seed.js` loads `database/seed.sql` (and
+  skips if the `users` table is non-empty). Both read `DATABASE_URL`.
+- **`schema.sql` is valid and idempotent.** The invalid `CREATE DATABASE IF NOT
+  EXISTS` line is gone; every `CREATE TABLE`/`CREATE INDEX` uses `IF NOT EXISTS`, so
+  the migrate script is safe to re-run. Create the database itself first
+  (`createdb earth_smart`).
+- **Backend lint exists.** `backend/package.json` has `"lint": "eslint ."` with a
+  flat config at `backend/eslint.config.js` (ESLint 10). `npm --prefix backend run
+  lint` passes (a couple of pre-existing `no-unused-vars` *warnings* remain on unused
+  `err` catch bindings — non-fatal).
+- **News and courses endpoints are DB-backed.** `GET /api/news` queries the `news`
+  table (supports `?category=`), `GET /api/courses` joins `courses` → `users` for the
+  instructor name, and `POST /api/courses/:id/enroll` writes to `course_enrollments`
+  (idempotent via `ON CONFLICT`). They return real data once the DB is seeded.
+- **`frontend/public/` and `frontend/components/` now exist** (with `.gitkeep`), so the
+  Docker `COPY ... ./public` step and the Tailwind `./components/**` content glob
+  resolve.
+- **`jsonwebtoken` version fixed.** The manifest pinned `^9.1.0`, which does not exist
+  on npm and broke `npm install` for the whole workspace; it is now `^9.0.2`.
+
+### Still outstanding
+
+1. **No tests exist.** Both packages declare a `jest`/`next test` script, but there
+   are no test files, so `npm run test` finds nothing. Add tests + config before
+   relying on it.
+2. **README tech claims are partly inaccurate.** It lists Redux Toolkit and Redis;
    the code uses Zustand-as-dependency-only (actually plain React state) and has no
    Redis client. Trust the code and this file over the README marketing copy.
-7. **No `frontend/public` or `frontend/components` directories exist** yet, though
-   `frontend/Dockerfile` copies `./public` and `tailwind.config.js` globs
-   `./components/**`. Create them as needed; the Docker build's `COPY ... ./public`
-   will fail until `public/` exists.
-8. **Socket.io is scaffolding only.** The server accepts connections and logs them
+3. **Socket.io is scaffolding only.** The server accepts connections and logs them
    but emits no real-time events; the frontend has no socket client wired up.
+4. **Frontend lint is not configured.** `frontend` has no ESLint config or
+   `eslint-config-next` dependency, so `next lint` prompts for first-run setup and
+   fails non-interactively. That means the *root* `npm run lint` can still fail at the
+   frontend step even though the backend step now passes. Set up `next lint` (add
+   `eslint` + `eslint-config-next` and an `.eslintrc`) to make the root script green.
+5. **`tools` table has no API/route.** The schema and seed include `tools`, but no
+   backend route exposes them yet (the frontend `/tools` page is static).
+6. **`docs/SETUP_GUIDE.md` references a `database/migrations/` directory** that does
+   not exist; migrations are a single `schema.sql`, applied by `db:migrate`.
 
 ## Deployment
 

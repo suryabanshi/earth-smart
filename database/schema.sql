@@ -1,8 +1,14 @@
--- Create database
-CREATE DATABASE IF NOT EXISTS earth_smart;
+-- Earth Smart schema
+--
+-- This file runs INSIDE the earth_smart database (create it first with
+-- `createdb earth_smart`, or let `npm run db:migrate` / scripts/migrate.js
+-- connect to it via DATABASE_URL). PostgreSQL has no `CREATE DATABASE IF NOT
+-- EXISTS`, so the database itself is created outside this script.
+--
+-- All statements use IF NOT EXISTS so the script is safe to re-run.
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -14,7 +20,7 @@ CREATE TABLE users (
 );
 
 -- Posts table
-CREATE TABLE posts (
+CREATE TABLE IF NOT EXISTS posts (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
@@ -25,7 +31,7 @@ CREATE TABLE posts (
 );
 
 -- Post likes table
-CREATE TABLE post_likes (
+CREATE TABLE IF NOT EXISTS post_likes (
   id SERIAL PRIMARY KEY,
   post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -34,7 +40,7 @@ CREATE TABLE post_likes (
 );
 
 -- Follows table
-CREATE TABLE follows (
+CREATE TABLE IF NOT EXISTS follows (
   id SERIAL PRIMARY KEY,
   follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   following_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -43,7 +49,7 @@ CREATE TABLE follows (
 );
 
 -- Courses table
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   description TEXT,
@@ -56,7 +62,7 @@ CREATE TABLE courses (
 );
 
 -- Course enrollments table
-CREATE TABLE course_enrollments (
+CREATE TABLE IF NOT EXISTS course_enrollments (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
@@ -66,7 +72,7 @@ CREATE TABLE course_enrollments (
 );
 
 -- News table
-CREATE TABLE news (
+CREATE TABLE IF NOT EXISTS news (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   description TEXT,
@@ -79,7 +85,7 @@ CREATE TABLE news (
 );
 
 -- Tools table
-CREATE TABLE tools (
+CREATE TABLE IF NOT EXISTS tools (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -90,7 +96,7 @@ CREATE TABLE tools (
 );
 
 -- Comments table
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
   id SERIAL PRIMARY KEY,
   post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -100,9 +106,9 @@ CREATE TABLE comments (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at);
-CREATE INDEX idx_follows_follower_id ON follows(follower_id);
-CREATE INDEX idx_follows_following_id ON follows(following_id);
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_course_enrollments_user_id ON course_enrollments(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
+CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_course_enrollments_user_id ON course_enrollments(user_id);
