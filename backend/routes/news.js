@@ -3,16 +3,21 @@ const pool = require('../config/db')
 
 const router = express.Router()
 
+// GET /api/news — latest news, optionally filtered by ?category=
 router.get('/', async (req, res) => {
   try {
-    // Mock news data
-    const newsData = [
-      { id: 1, title: 'New AI Tools Launch', author: 'Tech News Daily', category: 'AI', url: '#' },
-      { id: 2, title: 'Web Dev Trends 2024', author: 'Dev Weekly', category: 'Web', url: '#' },
-      { id: 3, title: 'Startup Funding Report', author: 'Business Insider', category: 'Business', url: '#' },
-    ]
-    res.json(newsData)
+    const { category } = req.query
+    const result = category
+      ? await pool.query(
+          'SELECT * FROM news WHERE category = $1 ORDER BY published_at DESC NULLS LAST LIMIT 50',
+          [category]
+        )
+      : await pool.query(
+          'SELECT * FROM news ORDER BY published_at DESC NULLS LAST LIMIT 50'
+        )
+    res.json(result.rows)
   } catch (err) {
+    console.error('Get news error:', err)
     res.status(500).json({ message: 'Failed to fetch news' })
   }
 })

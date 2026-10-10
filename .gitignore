@@ -3,6 +3,10 @@ node_modules/
 .pnp
 .pnp.js
 
+# Lockfiles (project pins via caret ranges; no lockfile is committed)
+package-lock.json
+yarn.lock
+
 # Testing
 coverage/
 

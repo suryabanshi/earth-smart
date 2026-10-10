@@ -4,27 +4,47 @@ const authMiddleware = require('../middleware/auth')
 
 const router = express.Router()
 
+// GET /api/courses — list courses with instructor name
 router.get('/', async (req, res) => {
   try {
-    // Mock courses data
-    const coursesData = [
-      { id: 1, title: 'Web Development Basics', instructor: 'John Doe', level: 'Beginner', price: 29.99 },
-      { id: 2, title: 'Advanced JavaScript', instructor: 'Jane Smith', level: 'Intermediate', price: 49.99 },
-      { id: 3, title: 'Full Stack Development', instructor: 'Mike Wilson', level: 'Advanced', price: 79.99 },
-    ]
-    res.json(coursesData)
+    const result = await pool.query(`
+      SELECT c.*, u.name AS instructor
+      FROM courses c
+      LEFT JOIN users u ON c.instructor_id = u.id
+      ORDER BY c.created_at DESC
+      LIMIT 50
+    `)
+    res.json(result.rows)
   } catch (err) {
+    console.error('Get courses error:', err)
     res.status(500).json({ message: 'Failed to fetch courses' })
   }
 })
 
+// POST /api/courses/:courseId/enroll — enroll the authenticated user
 router.post('/:courseId/enroll', authMiddleware, async (req, res) => {
   try {
     const userId = req.userId
-    const courseId = req.params.courseId
+    const { courseId } = req.params
 
-    res.json({ enrolled: true, message: 'Successfully enrolled in course' })
+    const result = await pool.query(
+      `INSERT INTO course_enrollments (user_id, course_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, course_id) DO NOTHING
+       RETURNING *`,
+      [userId, courseId]
+    )
+
+    const alreadyEnrolled = result.rows.length === 0
+    res.json({
+      enrolled: true,
+      alreadyEnrolled,
+      message: alreadyEnrolled
+        ? 'Already enrolled in course'
+        : 'Successfully enrolled in course',
+    })
   } catch (err) {
+    console.error('Enroll error:', err)
     res.status(500).json({ message: 'Failed to enroll in course' })
   }
 })
